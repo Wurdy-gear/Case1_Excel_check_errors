@@ -15,9 +15,8 @@ namespace Case1_Excel_check_errors
     {
         #region variables
 
-        Microsoft.Office.Interop.Excel.Application ObjExcel = null;
-        Microsoft.Office.Interop.Excel.Workbook ObjWorkBook = null;
-        Microsoft.Office.Interop.Excel.Worksheet ObjWorkSheet;
+        WorkWithExcel SaldoFile = null;
+        WorkWithExcel OstatkiFile = null;
 
         Microsoft.Office.Interop.Excel.Range Material_range = null;
         Microsoft.Office.Interop.Excel.Range Zapas_range = null;
@@ -32,38 +31,40 @@ namespace Case1_Excel_check_errors
             InitializeComponent();
         }
 
-        private void OpenToolStripMenuItem1_Click(object sender, EventArgs e)
+        private void ChooseSaldoFileButton_Click(object sender, EventArgs e) //Открытие сальдо отчёта
         {
-            //Открываем файл Экселя
-            if (OpenFileDialog.ShowDialog() == DialogResult.OK)
+            if (OpenFileDialogForSaldo.ShowDialog() == DialogResult.OK)
             {
-                try
-                {
-                    //Создаём приложение.
-                    ObjExcel = new Microsoft.Office.Interop.Excel.Application();
-                    //Открываем книгу.
-                    ObjWorkBook = ObjExcel.Workbooks.Open(OpenFileDialog.FileName, 0, false, 5, "", "", false, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "", true, false, 0, true, false, false);
-                    //Выбираем таблицу(лист).
-                    ObjWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)ObjWorkBook.Sheets[1];
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Ошибка при открытии файла", "Ошибка");
-                    ObjExcel.Quit();
-                }
-
-                
-                Thread ChecksumsThread = new Thread(new ThreadStart(Checksums));
-                ChecksumsThread.Priority = ThreadPriority.Highest;
-                ChecksumsThread.Start();
-                
-
+                SaldoFile = new WorkWithExcel(OpenFileDialogForSaldo);
             }
+            LabelForSelectedFilenameSaldo.Text = OpenFileDialogForSaldo.SafeFileName;
+        }
+
+        private void ChooseOstatkiFileButton_Click(object sender, EventArgs e) //Открытие отчета по остаткам
+        {
+            if (OpenFileDialogForOstatki.ShowDialog() == DialogResult.OK)
+            {
+                OstatkiFile = new WorkWithExcel(OpenFileDialogForOstatki);
+
+                timer1.Enabled=true;//Запуск таймера для проверки окончания открытия файлов
+                timer1.Start();
+            }
+            LabelForSelectedFilenameOstatki.Text = OpenFileDialogForOstatki.SafeFileName;
+        }
+
+        private void StartButton_Click(object sender, EventArgs e)
+        {
+            Thread ChecksumsThread = new Thread(new ThreadStart(Checksums));
+            ChecksumsThread.Start();
+
+            ChooseSaldoFileButton.Enabled = false;
+            ChooseOstatkiFileButton.Enabled = false;
+            StartButton.Enabled = false;
         }
 
         private void Checksums() //Проверка при помощи сложения всех цен одного материала и последующего сравнения с итоговой ценой в обоих таблицах
         {
-            try 
+            try
             {
                 #region variables
 
@@ -84,11 +85,11 @@ namespace Case1_Excel_check_errors
 
                 #endregion
 
-                for (int i = 2; i <= 56606; i++) //проверка сумм в таблице сальдо //56606
+                for (int i = 2; i <= SaldoFile.LastRowCell() -1 ; i++) //проверка сумм в таблице сальдо
                 {
-                    Material_range = ObjWorkSheet.Range["S" + i.ToString()];
-                    NumberDocument_range = ObjWorkSheet.Range["N" + i.ToString()];
-                    TotalPrice_range = ObjWorkSheet.Range["T" + i.ToString()];
+                    Material_range = SaldoFile.GetWorksheet().Range["G" + i.ToString()];
+                    NumberDocument_range = SaldoFile.GetWorksheet().Range["B" + i.ToString()];
+                    TotalPrice_range = SaldoFile.GetWorksheet().Range["H" + i.ToString()];
 
                     if (NumberDocument_range.Value as string == "" || NumberDocument_range.Value == null)//Проверка на строку с итоговой суммой
                     {
@@ -114,7 +115,7 @@ namespace Case1_Excel_check_errors
                             //Все сходится
                             SummOfAllMaterial_double = 0;
 
-                            if(TotalPrice_double < 0)
+                            if (TotalPrice_double < 0)
                             {
                                 SumErrorRichTextBox.Text += "Внимание отрицательная сумма сальдо в строке: " + i.ToString() + " \n";
                                 SumErrorRichTextBox.Text += "Материал: " + Material_double + " \n";
@@ -136,18 +137,18 @@ namespace Case1_Excel_check_errors
                 }
 
                 SummOfAllMaterial_double = 0;
-                for (int i = 2; i <= 9251; i++) //проверка сумм в таблице остатков //9251
+                for (int i = 2; i <= OstatkiFile.LastRowCell() -1; i++) //проверка сумм в таблице остатков //9251
                 {
-                    Material_range = ObjWorkSheet.Range["D" + i.ToString()];
-                    Zapas_range = ObjWorkSheet.Range["H" + i.ToString()];
-                    DefaultPrice_range = ObjWorkSheet.Range["I" + i.ToString()];
-                    TotalPrice_range = ObjWorkSheet.Range["K" + i.ToString()];
+                    Material_range = OstatkiFile.GetWorksheet().Range["D" + i.ToString()];
+                    Zapas_range = OstatkiFile.GetWorksheet().Range["H" + i.ToString()];
+                    DefaultPrice_range = OstatkiFile.GetWorksheet().Range["I" + i.ToString()];
+                    TotalPrice_range = OstatkiFile.GetWorksheet().Range["K" + i.ToString()];
 
                     if (Zapas_range.Value == null || Zapas_range.Value as string == "")
                     {
                         Material_double = Convert.ToInt64(Material_range.Value);
 
-                       // SummOfAllMaterial_double = OstatkiMaterial_list.Sum(n => n.TotalPrice);
+                        // SummOfAllMaterial_double = OstatkiMaterial_list.Sum(n => n.TotalPrice);
 
                         TotalPrice_double = Convert.ToDouble(TotalPrice_range.Value);
 
@@ -196,65 +197,70 @@ namespace Case1_Excel_check_errors
                 {
                     MaterialSumErrorRichTextBox.Text += "Материал с ID " + val.IDMaterial.ToString() + " не найден в таблице остатков" + "\n";
                 }
-                
+
 
                 SumErrorRichTextBox.Text += "Итоговая сумма таблицы остатков составила: " + SummOfAllMaterialOstatkiTable_double + " \n\n";
                 SumErrorRichTextBox.Text += "Итоговая сумма сальдо таблицы составила: " + SummOfAllMaterialSaldoTable_double + " \n\n";
                 SumErrorRichTextBox.Text += "Разница таблиц составила: " + Math.Abs(SummOfAllMaterialOstatkiTable_double - SummOfAllMaterialSaldoTable_double) + " \n\n";
+
+                ChooseSaldoFileButton.Enabled = true;
+                ChooseOstatkiFileButton.Enabled = true;
+                StartButton.Enabled = true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка при проверке контрольных сумм" + ex.ToString(),"Ошибка");
-                ObjExcel.Quit();
-            } 
-        }
-
-        private void CheckMultiplyQuantityByPrice()//Проверка с помощью перемножения количества на стандартную стоимость с последующей сверкой с итоговой ценой
-        {
-            try
-            {
-                double Zapas_double;
-                double DefaultPrice_double;
-                double TotalPrice_double;
-
-                for (int i = 2; i <= 9251; i++)
-                {
-                    Zapas_range = ObjWorkSheet.Range["H" + i.ToString()];
-                    DefaultPrice_range = ObjWorkSheet.Range["I" + i.ToString()];
-                    TotalPrice_range = ObjWorkSheet.Range["K" + i.ToString()];
-
-                    if (Zapas_range.Value == null)
-                    {
-
-                    }
-                    else
-                    {
-                        Zapas_double = Convert.ToDouble(Zapas_range.Value);
-                        DefaultPrice_double = Convert.ToDouble(DefaultPrice_range.Value);
-                        TotalPrice_double = Convert.ToDouble(TotalPrice_range.Value);
-
-                        double ExpectedTotalPrice_double = Zapas_double * DefaultPrice_double;
-                        double alpha = ExpectedTotalPrice_double - TotalPrice_double;
-
-                        if (EqualTo(ExpectedTotalPrice_double, TotalPrice_double))
-                        {
-                            //все круто
-                        }
-                        else
-                        {
-                            SumErrorRichTextBox.Text += "Перемножение неверно в строке" + i.ToString() + "\n";
-                            SumErrorRichTextBox.Text += "Разница составила:" + alpha + "\n\n";
-                        }
-                    }
-                    MultiplyProgressBar.PerformStep();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Ошибка при проверке перемножения" + ex.ToString(), "Ошибка");
-                ObjExcel.Quit();
+                MessageBox.Show("Ошибка при проверке контрольных сумм" + ex.ToString(), "Ошибка");
+                SaldoFile.CloseExcel();
+                OstatkiFile.CloseExcel();
             }
         }
+
+        /*   private void CheckMultiplyQuantityByPrice()//Проверка с помощью перемножения количества на стандартную стоимость с последующей сверкой с итоговой ценой
+           {
+               try
+               {
+                   double Zapas_double;
+                   double DefaultPrice_double;
+                   double TotalPrice_double;
+
+                   for (int i = 2; i <= 9251; i++)
+                   {
+                       Zapas_range = ObjWorkSheet.Range["H" + i.ToString()];
+                       DefaultPrice_range = ObjWorkSheet.Range["I" + i.ToString()];
+                       TotalPrice_range = ObjWorkSheet.Range["K" + i.ToString()];
+
+                       if (Zapas_range.Value == null)
+                       {
+
+                       }
+                       else
+                       {
+                           Zapas_double = Convert.ToDouble(Zapas_range.Value);
+                           DefaultPrice_double = Convert.ToDouble(DefaultPrice_range.Value);
+                           TotalPrice_double = Convert.ToDouble(TotalPrice_range.Value);
+
+                           double ExpectedTotalPrice_double = Zapas_double * DefaultPrice_double;
+                           double alpha = ExpectedTotalPrice_double - TotalPrice_double;
+
+                           if (EqualTo(ExpectedTotalPrice_double, TotalPrice_double))
+                           {
+                               //все круто
+                           }
+                           else
+                           {
+                               SumErrorRichTextBox.Text += "Перемножение неверно в строке" + i.ToString() + "\n";
+                               SumErrorRichTextBox.Text += "Разница составила:" + alpha + "\n\n";
+                           }
+                       }
+                       MultiplyProgressBar.PerformStep();
+                   }
+               }
+               catch (Exception ex)
+               {
+                   MessageBox.Show("Ошибка при проверке перемножения" + ex.ToString(), "Ошибка");
+                   ObjExcel.Quit();
+               }
+           }*/
 
         private bool EqualTo(double value1, double value2)
         {
@@ -264,9 +270,22 @@ namespace Case1_Excel_check_errors
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if(ObjExcel != null)
-            { 
-                ObjExcel.Quit();
+            if (SaldoFile != null & OstatkiFile != null)
+            {
+                SaldoFile.CloseExcel();
+                OstatkiFile.CloseExcel();
+            }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (SaldoFile != null & OstatkiFile != null)
+            {
+                if (!SaldoFile.ThreadIsAlive() && !OstatkiFile.ThreadIsAlive() && (OpenFileDialogForOstatki.FileName != "" && OpenFileDialogForSaldo.FileName != ""))
+                {
+                    timer1.Stop();
+                    StartButton.Enabled = true;
+                }
             }
         }
     }
