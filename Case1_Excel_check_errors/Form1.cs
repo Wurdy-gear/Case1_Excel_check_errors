@@ -16,8 +16,8 @@ namespace Case1_Excel_check_errors
     {
         #region variables
 
-        WorkWithExcel SaldoFile = null;
-        WorkWithExcel OstatkiFile = null;
+        WorkWithExcel SaldoFile = new WorkWithExcel();
+        WorkWithExcel OstatkiFile = new WorkWithExcel();
 
         Microsoft.Office.Interop.Excel.Range Material_range = null;
         Microsoft.Office.Interop.Excel.Range Zapas_range = null;
@@ -279,7 +279,7 @@ namespace Case1_Excel_check_errors
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            SaldoFile.CloseExcel();
+            SaldoFile. CloseExcel();
             OstatkiFile.CloseExcel();
         }
 

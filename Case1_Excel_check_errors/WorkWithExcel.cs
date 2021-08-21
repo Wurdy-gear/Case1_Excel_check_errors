@@ -15,7 +15,13 @@ namespace Case1_Excel_check_errors
         public Microsoft.Office.Interop.Excel.Worksheet ObjWorkSheet;
         Thread thread;
 
-        public WorkWithExcel(OpenFileDialog openFileDialog)
+        public WorkWithExcel()
+        {
+            ObjExcel = null;
+            ObjWorkBook = null;
+        }
+
+            public WorkWithExcel(OpenFileDialog openFileDialog)
         {
             thread = new Thread(() => OpenFile(openFileDialog));
             thread.Start();//передача параметра в поток
@@ -77,9 +83,13 @@ namespace Case1_Excel_check_errors
 
         public void CloseExcel()
         {
-            if(ObjWorkBook != null & ObjExcel != null)
+            if(ObjWorkBook == null & ObjExcel ==null)
             {
-                ObjWorkBook.Close(null,null,null);
+
+            }
+            else
+            {
+                ObjWorkBook.Close(false);
                 ObjExcel.Quit();
             }
         }
