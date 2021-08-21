@@ -17,11 +17,12 @@ namespace Case1_Excel_check_errors
 
         public WorkWithExcel()
         {
+            thread = null;
             ObjExcel = null;
             ObjWorkBook = null;
         }
 
-            public WorkWithExcel(OpenFileDialog openFileDialog)
+        public WorkWithExcel(OpenFileDialog openFileDialog)
         {
             thread = new Thread(() => OpenFile(openFileDialog));
             thread.Start();//передача параметра в поток
@@ -29,12 +30,20 @@ namespace Case1_Excel_check_errors
 
         public bool ThreadIsAlive()
         {
-            if (thread.IsAlive)
+            if (thread == null)
             {
-                return true;
+                return false;
             }
             else
-                return false;
+            {
+                if (thread.IsAlive)
+                {
+                    return true;
+                }
+                else
+                    return false;
+            }
+                
         }
 
         public void OpenFile(OpenFileDialog openFileDialog)
@@ -54,6 +63,10 @@ namespace Case1_Excel_check_errors
                 MessageBox.Show("Ошибка при открытии файла", "Ошибка");
                 CloseExcel();
             }
+        }
+        public Thread GetThread()
+        {
+            return thread;
         }
 
         public Microsoft.Office.Interop.Excel.Worksheet GetWorksheet()
@@ -83,11 +96,15 @@ namespace Case1_Excel_check_errors
 
         public void CloseExcel()
         {
-            if(ObjWorkBook == null & ObjExcel ==null)
+            if(this.GetThread() == null)
             {
 
             }
-            else
+            else if (this.ThreadIsAlive())
+            {
+
+            }
+            else if(this.GetApplication() == ObjExcel)
             {
                 ObjWorkBook.Close(false);
                 ObjExcel.Quit();

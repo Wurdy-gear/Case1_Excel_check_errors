@@ -24,7 +24,6 @@ namespace Case1_Excel_check_errors
         Microsoft.Office.Interop.Excel.Range DefaultPrice_range = null;
         Microsoft.Office.Interop.Excel.Range TotalPrice_range = null;
         Microsoft.Office.Interop.Excel.Range NumberDocument_range = null;
-
         #endregion
         public Form1()
         {
@@ -33,9 +32,21 @@ namespace Case1_Excel_check_errors
 
         private void ChooseSaldoFileButton_Click(object sender, EventArgs e) //Открытие сальдо отчёта
         {
-            if (OpenFileDialogForSaldo.ShowDialog() == DialogResult.OK)
+            if(OpenFileDialogForSaldo.ShowDialog() == DialogResult.OK)
             {
+                if(SaldoFile.GetApplication() != null)
+                {
+                    SaldoFile.CloseExcel();
+                }
                 SaldoFile = new WorkWithExcel(OpenFileDialogForSaldo);
+
+                timer1.Enabled = true;//Запуск таймера для проверки окончания открытия файлов
+                timer1.Start();
+                ChooseSaldoFileButton.Enabled = false;
+            }
+            else
+            {
+
             }
             LabelForSelectedFilenameSaldo.Text = OpenFileDialogForSaldo.SafeFileName;
         }
@@ -44,10 +55,20 @@ namespace Case1_Excel_check_errors
         {
             if (OpenFileDialogForOstatki.ShowDialog() == DialogResult.OK)
             {
+                if (OstatkiFile.GetApplication() != null)
+                {
+                    OstatkiFile.CloseExcel();
+                }
+
                 OstatkiFile = new WorkWithExcel(OpenFileDialogForOstatki);
 
                 timer1.Enabled = true;//Запуск таймера для проверки окончания открытия файлов
                 timer1.Start();
+                ChooseOstatkiFileButton.Enabled = false;
+            }
+            else
+            {
+
             }
             LabelForSelectedFilenameOstatki.Text = OpenFileDialogForOstatki.SafeFileName;
         }
@@ -279,17 +300,37 @@ namespace Case1_Excel_check_errors
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            SaldoFile. CloseExcel();
-            OstatkiFile.CloseExcel();
+            if(SaldoFile.ThreadIsAlive() || OstatkiFile.ThreadIsAlive())
+            {
+                DialogResult dialog = MessageBox.Show("Дождитесь открытия файлов, после сможете закрыть программу", "Завершение программы", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                if (dialog == DialogResult.OK)
+                {
+                    e.Cancel = true;
+                }
+            }
+            else
+            {
+                SaldoFile.CloseExcel();
+                OstatkiFile.CloseExcel();
+            }
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
             if (SaldoFile != null & OstatkiFile != null)
             {
+                if(!SaldoFile.ThreadIsAlive())
+                {
+                    ChooseSaldoFileButton.Enabled = true;
+                }
+                if (!OstatkiFile.ThreadIsAlive())
+                {
+                    ChooseOstatkiFileButton.Enabled = true;
+                }
                 if (!SaldoFile.ThreadIsAlive() && !OstatkiFile.ThreadIsAlive() && (OpenFileDialogForOstatki.FileName != "" && OpenFileDialogForSaldo.FileName != ""))
                 {
-                    timer1.Stop();
+                    timer1.Stop(); 
                     StartButton.Enabled = true;
                 }
             }
