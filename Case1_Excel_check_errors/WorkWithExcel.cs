@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace Case1_Excel_check_errors
 {
-    class WorkWithExcel
+    class WorkWithExcel //Класс для работы с экселем
     {
         public Microsoft.Office.Interop.Excel.Application ObjExcel = null;
         public Microsoft.Office.Interop.Excel.Workbook ObjWorkBook = null;
@@ -77,8 +77,11 @@ namespace Case1_Excel_check_errors
 
         public void CloseExcel()
         {
-            ObjWorkBook.Close();
-            ObjExcel.Quit();
+            if(ObjWorkBook != null & ObjExcel != null)
+            {
+                ObjWorkBook.Close(null,null,null);
+                ObjExcel.Quit();
+            }
         }
     }
 }
