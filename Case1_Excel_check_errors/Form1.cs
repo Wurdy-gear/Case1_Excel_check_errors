@@ -32,7 +32,8 @@ namespace Case1_Excel_check_errors
 
         private void ChooseSaldoFileButton_Click(object sender, EventArgs e) //Открытие сальдо отчёта
         {
-            if(OpenFileDialogForSaldo.ShowDialog() == DialogResult.OK)
+            ChooseSaldoFileButton.Enabled = false;
+            if (OpenFileDialogForSaldo.ShowDialog() == DialogResult.OK)
             {
                 if(SaldoFile.GetApplication() != null)
                 {
@@ -53,6 +54,7 @@ namespace Case1_Excel_check_errors
 
         private void ChooseOstatkiFileButton_Click(object sender, EventArgs e) //Открытие отчета по остаткам
         {
+            ChooseOstatkiFileButton.Enabled = false;
             if (OpenFileDialogForOstatki.ShowDialog() == DialogResult.OK)
             {
                 if (OstatkiFile.GetApplication() != null)
@@ -82,6 +84,11 @@ namespace Case1_Excel_check_errors
             ChooseSaldoFileButton.Enabled = false;
             ChooseOstatkiFileButton.Enabled = false;
             StartButton.Enabled = false;
+
+            SumErrorRichTextBox.Clear();
+            MaterialSumErrorRichTextBox.Clear();
+            MultiplyProgressBar.Value = MultiplyProgressBar.Minimum;
+            SumProgressBar.Value = SumProgressBar.Minimum;
         }
         
         private void Checksums() //Проверка при помощи сложения всех цен одного материала и последующего сравнения с итоговой ценой в обоих таблицах
